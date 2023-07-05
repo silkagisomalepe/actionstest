@@ -1,10 +1,7 @@
-name: TEST Login
+name: TEST AWS Login
 on:
   push:
-    branches: [ "main" ]
-
-env:
-  AWS_REGION: "eu-west-1"     
+    branches: [ "main" ]   
 permissions:
   contents: read
 
@@ -22,7 +19,7 @@ jobs:
       uses: aws-actions/configure-aws-credentials@v2
       with:
         role-to-assume: arn:aws:iam::773552202210:role/nameofGitHubRoleHere
-        aws-region: us-east-1
+        aws-region: eu-west-1
 
     - name: Login to Amazon ECR
       id: login-ecr
