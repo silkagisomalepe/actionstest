@@ -1,0 +1,3 @@
+# actionstest
+
+*** Test AWS OIDC
