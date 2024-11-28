@@ -1,0 +1,55 @@
+name: Deploy NextJS app
+on:
+  push:
+    branches: [ "main" ]   
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    name: Deploy
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+
+    - name: Create .env file from Actions Secrets
+      run: |
+        echo "DB_USER=${{ secrets.DB_USER }}" >> .env
+        echo "DB_PASSWORD=${{ secrets.DB_PASSWORD }}" >> .env
+        echo "DB_SERVER=${{ secrets.DB_SERVER }}" >> .env
+        echo "DB_PORT=${{ secrets.DB_PORT }}" >> .env
+        echo "DB_NAME=${{ secrets.DB_NAME }}" >> .env
+        echo "NEXT_PUBLIC_API_URL=${{ secrets.NEXT_PUBLIC_API_URL }}" >> .env
+        echo "DB_VERBOSE=${{ secrets.DB_VERBOSE }}" >> .env
+        echo "AUTH0_SECRET=${{ secrets.AUTH0_SECRET }}" >> .env
+        echo "AUTH0_BASE_URL=${{ secrets.AUTH0_BASE_URL }}" >> .env
+        echo "AUTH0_ISSUER_BASE_URL=${{ secrets.AUTH0_ISSUER_BASE_URL }}" >> .env
+        echo "AUTH0_CLIENT_ID=${{ secrets.AUTH0_CLIENT_ID }}" >> .env
+        echo "AUTH0_CLIENT_SECRET=${{ secrets.AUTH0_CLIENT_SECRET }}" >> .env
+        echo "AUTH0_SCOPE=${{ secrets.AUTH0_SCOPE }}" >> .env
+        echo "AUTH0_AUDIENCE=${{ secrets.AUTH0_AUDIENCE }}" >> .env
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v3
+      with:
+        role-to-assume: ${{ secrets.DEV_AWS_OIDC_IAM_ROLE_ARN }}
+        aws-region: ${{ secrets.DEV_AWS_REGION }}
+
+    - name: Login to Amazon ECR
+      id: login-ecr
+      uses: aws-actions/amazon-ecr-login@v1
+
+    - name: Build and Deploy to ECS
+      id: build-image
+      env:
+          DEV_PROJECT: "name-of-ecs-service"
+          DEV_CLUSTER: "name of-ecs-cluster"
+      run: |
+        aws ecr get-login-password --region ${{ secrets.DEV_AWS_REGION }} | docker login --username AWS --password-stdin ${{ secrets.DEV_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.DEV_AWS_REGION }}.amazonaws.com
+        docker build -f Dockerfile.prod -t ${{ secrets.DEV_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.DEV_AWS_REGION }}.amazonaws.com/$DEV_PROJECT:latest .
+        docker push ${{ secrets.DEV_AWS_ACCOUNT_ID }}.dkr.ecr.${{ secrets.DEV_AWS_REGION }}.amazonaws.com/$DEV_PROJECT:latest
+        aws ecs update-service --cluster arn:aws:ecs:${{ secrets.DEV_AWS_REGION }}:${{ secrets.DEV_AWS_ACCOUNT_ID }}:cluster/$DEV_CLUSTER --service $DEV_PROJECT --force-new-deployment
