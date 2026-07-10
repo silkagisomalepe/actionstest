@@ -1,0 +1,94 @@
+name: Deploy - AWS Drupal Tender
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: "Drupal Tender Environment: "
+        required: true
+        default: "Test"
+        type: choice
+        options:
+          - Test
+          - Production
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  scan:
+    name: scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 1
+    
+    - name: Vulnerability Scan
+      uses: aquasecurity/trivy-action@v0.36.0
+      with:
+        scan-type: fs
+        scan-ref: .
+        format: table
+        output: trivy-results.txt
+        severity: CRITICAL,HIGH,MEDIUM
+        exit-code: "0"
+
+  deploy:
+    name: deploy-drupal-tender-${{ matrix.config.name }}
+    needs: scan
+    runs-on: ubuntu-latest
+    environment: ${{ matrix.config.github_environment }}
+    
+    strategy:
+      matrix:
+        config:
+          - name: test
+            github_environment: development
+            condition: Test
+            role_secret: TEST_TENDER_AWS_OIDC_ROLE
+            region_secret: TEST_TENDER_AWS_REGION
+            app_secret: TEST_TENDER_AWS_CODEDEPLOY_APP
+            app_dg_secret: TEST_TENDER_AWS_CODEDEPLOY_APP_DG
+            bucket_secret: TEST_TENDER_AWS_CODEDEPLOY_S3_BUCKET
+            s3_folder_secret: TEST_TENDER_AWS_S3_FOLDER
+          - name: production
+            github_environment: production
+            condition: Production
+            role_secret: PROD_TENDER_AWS_OIDC_ROLE
+            region_secret: PROD_TENDER_AWS_REGION
+            app_secret: PROD_TENDER_AWS_CODEDEPLOY_APP
+            app_dg_secret: PROD_TENDER_AWS_CODEDEPLOY_APP_DG
+            bucket_secret: PROD_TENDER_AWS_CODEDEPLOY_S3_BUCKET
+            s3_folder_secret: PROD_TENDER_AWS_S3_FOLDER
+
+    steps:
+    - name: Checkout
+      if: github.event.inputs.environment == matrix.config.condition
+      uses: actions/checkout@v6
+      with:
+        fetch-depth: 1
+
+    - name: AWS Auth
+      if: github.event.inputs.environment == matrix.config.condition
+      uses: aws-actions/configure-aws-credentials@v6
+      with:
+        role-to-assume: ${{ secrets[matrix.config.role_secret] }}
+        aws-region: ${{ secrets[matrix.config.region_secret] }}
+
+    - name: CodeDeploy
+      if: github.event.inputs.environment == matrix.config.condition
+      uses: sourcetoad/aws-codedeploy-action@v1
+      with:
+        codedeploy_name: ${{ secrets[matrix.config.app_secret] }}
+        codedeploy_group: ${{ secrets[matrix.config.app_dg_secret] }}
+        aws_region: ${{ secrets[matrix.config.region_secret] }}
+        s3_bucket: ${{ secrets[matrix.config.bucket_secret] }}
+        s3_folder: ${{ secrets[matrix.config.s3_folder_secret] }}
+        max_polling_iterations: 20
+        codedeploy_register_only: false
+        excluded_files: '.git/* vendor/* node_modules/*'
+        directory: ./
