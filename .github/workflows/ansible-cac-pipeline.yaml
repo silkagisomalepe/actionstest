@@ -1,0 +1,147 @@
+name: Ansible SSM Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - playbooks/**
+      - roles/**
+      - requirements.yml
+  pull_request:
+    branches: [main]
+    paths:
+      - playbooks/**
+      - roles/**
+      - requirements.yml
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment
+        required: true
+        type: choice
+        options: [dev, prod]
+      action:
+        description: Action
+        required: true
+        type: choice
+        options: [check, deploy]
+        default: check
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+jobs:
+  lint:
+    name: Ansible lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Format check
+        run: |
+          pip install yamllint
+          yamllint playbooks/ roles/
+
+      - name: Run ansible-lint
+        uses: ansible/ansible-lint-action@v6
+        with:
+          targets: |
+            playbooks/
+            roles/
+
+      - name: Syntax check
+        run: ansible-playbook playbooks/site.yml --syntax-check
+
+  scan:
+    name: Vulnerability scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Vulnerability Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: sarif
+          output: trivy-results.sarif
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: "1"
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v4
+        if: always()
+        with:
+          sarif_file: trivy-results.sarif
+          category: trivy-ansible-scan
+
+  deploy:
+    name: Deploy / ${{ matrix.environment }}
+    needs: [lint, scan]
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.environment)) || fromJson('["dev","prod"]') }}
+      fail-fast: false
+      max-parallel: 1
+    environment: ${{ matrix.environment }}
+    env:
+      AWS_OIDC_IAM_ROLE: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_IAM_ROLE || secrets.DEV_AWS_OIDC_IAM_ROLE }}
+      AWS_OIDC_REGION: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_REGION || secrets.DEV_AWS_OIDC_REGION }}
+      AWS_OIDC_ARTIFACT_BUCKET: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_ARTIFACT_BUCKET || secrets.DEV_AWS_OIDC_ARTIFACT_BUCKET }}
+      AWS_OIDC_HEALTH_URL: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_HEALTH_URL || secrets.DEV_AWS_OIDC_HEALTH_URL }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ env.AWS_OIDC_IAM_ROLE }}
+          aws-region: ${{ env.AWS_OIDC_REGION }}
+
+      - name: Package playbook
+        run: tar -czf ansible-deploy.tar.gz playbooks/ roles/ requirements.yml
+
+      - name: Upload artifact
+        run: aws s3 cp ansible-deploy.tar.gz s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.tar.gz
+
+      - name: Run playbook (SSM)
+        run: |
+          MODE="${{ github.event_name == 'workflow_dispatch' && inputs.action == 'check' && '--check' || '' }}"
+          COMMAND_ID=$(aws ssm send-command \
+            --document-name "AWS-RunAnsiblePlaybook" \
+            --targets "Key=tag:Environment,Values=${{ matrix.environment }}" "Key=tag:Role,Values=WebServer" \
+            --parameters '{
+              "playbookurl": ["s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-'"${{ github.sha }}"'.tar.gz"],
+              "playbookfile": ["playbooks/site.yml"],
+              "extraparams": ["--extra-vars env=${{ matrix.environment }} '"$MODE"'"]
+            }' \
+            --query "Command.CommandId" --output text)
+          echo "COMMAND_ID=$COMMAND_ID" >> $GITHUB_ENV
+
+      - name: Wait for completion
+        run: |
+          for i in $(seq 1 30); do
+            STATUSES=$(aws ssm list-command-invocations --command-id "$COMMAND_ID" --query "CommandInvocations[].Status" --output text)
+            echo "$STATUSES" | grep -qiE "Pending|InProgress|Delayed" || break
+            sleep 10
+          done
+          echo "$STATUSES"
+          echo "$STATUSES" | grep -qiE "Failed|TimedOut|Cancelled" && exit 1 || true
+
+      - name: Smoke test
+        if: github.event_name != 'workflow_dispatch' || inputs.action == 'deploy'
+        run: |
+          for i in $(seq 1 5); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.AWS_OIDC_HEALTH_URL }}")
+            echo "$STATUS"
+            [ "$STATUS" -eq 200 ] && exit 0
+            sleep 10
+          done
+          exit 1

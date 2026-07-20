@@ -1,0 +1,9 @@
+---
+- name: Run roles
+  hosts: all
+  become: true
+  gather_facts: true
+
+  roles:
+    - common
+    - nginx

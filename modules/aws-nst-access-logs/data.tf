@@ -47,6 +47,22 @@ data "aws_iam_policy_document" "access_logs_kms" {
       identifiers = ["delivery.logs.amazonaws.com"]
     }
   }
+
+  statement {
+    sid    = "AllowALBLogDeliveryKMSAccess"
+    effect = "Allow"
+    actions = [
+      "kms:Decrypt",
+      "kms:GenerateDataKey*",
+      "kms:DescribeKey",
+    ]
+    resources = ["*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
+    }
+  }
 }
 
 data "aws_iam_policy_document" "alb_logs" {
@@ -116,6 +132,42 @@ data "aws_iam_policy_document" "alb_logs" {
         data.aws_caller_identity.current.account_id,
         data.aws_elb_service_account.current.arn,
       ]
+    }
+  }
+
+  statement {
+    sid       = "AllowALBLogDeliveryPutObject"
+    effect    = "Allow"
+    actions   = ["s3:PutObject"]
+    resources = ["arn:aws:s3:::${aws_s3_bucket.web_lb_logs.bucket}/${var.alb_logs_prefix}/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
+    }
+  }
+
+  statement {
+    sid       = "AllowALBLogDeliveryGetBucketAcl"
+    effect    = "Allow"
+    actions   = ["s3:GetBucketAcl"]
+    resources = [aws_s3_bucket.web_lb_logs.arn]
+
+    principals {
+      type        = "Service"
+      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
+    }
+
+    condition {
+      test     = "StringEquals"
+      variable = "aws:SourceAccount"
+      values   = [data.aws_caller_identity.current.account_id]
     }
   }
 }
