@@ -6,7 +6,7 @@ data "aws_iam_policy_document" "s3_cloudtrail" {
   statement {
     sid       = "AWSCloudTrailAclCheck"
     effect    = "Allow"
-    resources = ["arn:aws:s3:::${var.name}"]
+    resources = ["arn:aws:s3:::${local.bucket_name}"]
     actions   = ["s3:GetBucketAcl"]
 
     principals {
@@ -18,7 +18,7 @@ data "aws_iam_policy_document" "s3_cloudtrail" {
   statement {
     sid       = "AWSCloudTrailWrite"
     effect    = "Allow"
-    resources = ["arn:aws:s3:::${var.name}/cloudtrail/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
+    resources = ["arn:aws:s3:::${local.bucket_name}/cloudtrail/AWSLogs/${data.aws_caller_identity.current.account_id}/*"]
     actions   = ["s3:PutObject"]
 
     condition {
@@ -36,7 +36,7 @@ data "aws_iam_policy_document" "s3_cloudtrail" {
   statement {
     sid       = "DenyIfNotUsingSecureTransport"
     effect    = "Deny"
-    resources = ["arn:aws:s3:::${var.name}/*"]
+    resources = ["arn:aws:s3:::${local.bucket_name}/*"]
     actions   = ["*"]
 
     condition {

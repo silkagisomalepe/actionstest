@@ -2,69 +2,6 @@ data "aws_caller_identity" "current" {}
 
 data "aws_elb_service_account" "current" {}
 
-data "aws_iam_policy_document" "access_logs_kms" {
-  statement {
-    sid       = "EnableRootAccess"
-    effect    = "Allow"
-    actions   = ["kms:*"]
-    resources = ["*"]
-
-    principals {
-      type        = "AWS"
-      identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
-    }
-  }
-
-  statement {
-    sid    = "AllowS3Access"
-    effect = "Allow"
-    actions = [
-      "kms:Decrypt",
-      "kms:GenerateDataKey*",
-      "kms:CreateGrant",
-      "kms:DescribeKey",
-    ]
-    resources = ["*"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["s3.amazonaws.com"]
-    }
-  }
-
-  statement {
-    sid    = "AllowDeliveryLogsAccess"
-    effect = "Allow"
-    actions = [
-      "kms:Decrypt",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey",
-    ]
-    resources = ["*"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["delivery.logs.amazonaws.com"]
-    }
-  }
-
-  statement {
-    sid    = "AllowALBLogDeliveryKMSAccess"
-    effect = "Allow"
-    actions = [
-      "kms:Decrypt",
-      "kms:GenerateDataKey*",
-      "kms:DescribeKey",
-    ]
-    resources = ["*"]
-
-    principals {
-      type        = "Service"
-      identifiers = ["logdelivery.elasticloadbalancing.amazonaws.com"]
-    }
-  }
-}
-
 data "aws_iam_policy_document" "alb_logs" {
   statement {
     sid       = "DenyIfNotUsingSecureTransport"

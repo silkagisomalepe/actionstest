@@ -2,6 +2,8 @@ locals {
   tags = merge(var.service_tags, {
     Environment = var.environment
   })
+
+  bucket_name = "${var.name}-logs"
 }
 
 module "kms_key" {
@@ -15,10 +17,10 @@ module "kms_key" {
 
 
 resource "aws_s3_bucket" "aws_cloudtrail" {
-  bucket = var.name
+  bucket = local.bucket_name
 
   tags = merge(local.tags, {
-    Name = var.name
+    Name = local.bucket_name
   })
 }
 

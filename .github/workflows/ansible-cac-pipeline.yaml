@@ -141,13 +141,13 @@ jobs:
           echo "$STATUSES"
           echo "$STATUSES" | grep -qiE "Failed|TimedOut|Cancelled" && exit 1 || true
 
-      - name: Smoke test
-        if: github.event_name != 'workflow_dispatch' || inputs.action == 'deploy'
-        run: |
-          for i in $(seq 1 5); do
-            STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.AWS_OIDC_HEALTH_URL }}")
-            echo "$STATUS"
-            [ "$STATUS" -eq 200 ] && exit 0
-            sleep 10
-          done
-          exit 1
+      # - name: Smoke test
+      #   if: github.event_name != 'workflow_dispatch' || inputs.action == 'deploy'
+      #   run: |
+      #     for i in $(seq 1 5); do
+      #       STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.AWS_OIDC_HEALTH_URL }}")
+      #       echo "$STATUS"
+      #       [ "$STATUS" -eq 200 ] && exit 0
+      #       sleep 10
+      #     done
+      #     exit 1

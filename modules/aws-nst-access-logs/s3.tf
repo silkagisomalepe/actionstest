@@ -1,15 +1,3 @@
-resource "aws_kms_key" "access_logs" {
-  description             = "access-logs-key"
-  enable_key_rotation     = true
-  deletion_window_in_days = 30
-  policy                  = data.aws_iam_policy_document.access_logs_kms.json
-}
-
-resource "aws_kms_alias" "access_logs" {
-  name          = "alias/${var.name}-key"
-  target_key_id = aws_kms_key.access_logs.id
-}
-
 resource "aws_s3_bucket" "web_lb_logs" {
   bucket = var.name
 
@@ -33,10 +21,8 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "web_lb_logs" {
 
   rule {
     apply_server_side_encryption_by_default {
-      sse_algorithm     = "aws:kms"
-      kms_master_key_id = aws_kms_key.access_logs.arn
+      sse_algorithm = "AES256"
     }
-    bucket_key_enabled = true
   }
 }
 

@@ -2,7 +2,7 @@ module "alb-public" {
   source  = "terraform-aws-modules/alb/aws"
   version = "~> 9.10.0"
 
-  name    = "${var.name}-alb-private"
+  name    = "${var.name}-alb-public"
   vpc_id  = module.vpc.vpc_id
   subnets = slice(module.vpc.public_subnets, 0, min(3, length(module.vpc.public_subnets)))
 
@@ -67,4 +67,7 @@ module "alb-public" {
     prefix  = "alb"
     enabled = true
   }
+  tags = merge(var.tags, {
+    Name = "${var.name}-alb-public"
+  })
 }
