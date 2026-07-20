@@ -16,12 +16,20 @@
     state: present
   when: ansible_facts['pkg_mgr'] == 'dnf'
 
-- name: Create myapp service user
-  ansible.builtin.user:
+- name: Ensure app group exists
+  ansible.builtin.group:
     name: "{{ myapp_user }}"
     system: true
-    shell: /usr/sbin/nologin
+    state: present
+
+- name: Ensure app user exists
+  ansible.builtin.user:
+    name: "{{ myapp_user }}"
+    group: "{{ myapp_user }}"
+    system: true
     create_home: false
+    shell: /usr/sbin/nologin
+    state: present
 
 - name: Ensure app directory exists
   ansible.builtin.file:
