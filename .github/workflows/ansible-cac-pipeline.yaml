@@ -48,7 +48,7 @@ jobs:
           yamllint playbooks/ roles/
 
       - name: Run ansible-lint
-        uses: ansible/ansible-lint-action@v6
+        uses: ansible/ansible-lint@v26.6.0
         with:
           targets: |
             ansible/playbooks/
@@ -68,17 +68,17 @@ jobs:
         with:
           scan-type: config
           scan-ref: .
-          format: sarif
-          output: trivy-results.sarif
+          format: table
+          output: trivy-results.txt
           severity: CRITICAL,HIGH,MEDIUM
           exit-code: "1"
 
       - name: Upload Trivy results
-        uses: github/codeql-action/upload-sarif@v4
-        if: always()
+        uses: actions/upload-artifact@v4
         with:
-          sarif_file: trivy-results.sarif
-          category: trivy-ansible-scan
+          name: trivy-results
+          path: |
+            trivy-results.txt
 
   deploy:
     name: Deploy / ${{ matrix.environment }}
