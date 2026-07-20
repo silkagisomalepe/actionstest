@@ -4,15 +4,15 @@ on:
   push:
     branches: [main]
     paths:
-      - playbooks/**
-      - roles/**
-      - requirements.yml
+      - ansible/playbooks/**
+      - ansible/roles/**
+      - ansible/requirements.yml
   pull_request:
     branches: [main]
     paths:
-      - playbooks/**
-      - roles/**
-      - requirements.yml
+      - ansible/playbooks/**
+      - ansible/roles/**
+      - ansible/requirements.yml
   workflow_dispatch:
     inputs:
       environment:
@@ -36,6 +36,9 @@ jobs:
   lint:
     name: Ansible lint
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ansible
     steps:
       - uses: actions/checkout@v6
 
@@ -48,8 +51,8 @@ jobs:
         uses: ansible/ansible-lint-action@v6
         with:
           targets: |
-            playbooks/
-            roles/
+            ansible/playbooks/
+            ansible/roles/
 
       - name: Syntax check
         run: ansible-playbook playbooks/site.yml --syntax-check
@@ -95,6 +98,9 @@ jobs:
       AWS_OIDC_REGION: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_REGION || secrets.DEV_AWS_OIDC_REGION }}
       AWS_OIDC_ARTIFACT_BUCKET: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_ARTIFACT_BUCKET || secrets.DEV_AWS_OIDC_ARTIFACT_BUCKET }}
       AWS_OIDC_HEALTH_URL: ${{ matrix.environment == 'prod' && secrets.PROD_AWS_OIDC_HEALTH_URL || secrets.DEV_AWS_OIDC_HEALTH_URL }}
+    defaults:
+      run:
+        working-directory: ansible
 
     steps:
       - uses: actions/checkout@v6
