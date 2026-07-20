@@ -37,11 +37,11 @@ resource "aws_iam_role_policy_attachment" "logs" {
 resource "aws_launch_template" "ec2" {
   for_each = local.ec2_instances
 
-  name          = "${var.service_name}-${each.value.name}"
-  description   = "${var.service_name}-${each.value.name} Server"
+  name          = each.value.name
+  description   = each.value.name
   image_id      = each.value.ami
   instance_type = each.value.type
-  key_name      = "${var.service_name}-${each.value.name}-kp"
+  key_name      = "${each.value.name}-kp"
 
   ebs_optimized = true
 
@@ -81,14 +81,14 @@ resource "aws_launch_template" "ec2" {
   tag_specifications {
     resource_type = "instance"
     tags = merge(var.service_tags, {
-      Name = "${var.service_name}-${each.value.name}"
+      Name = each.value.name
     })
   }
 
   tag_specifications {
     resource_type = "volume"
     tags = merge(var.service_tags, {
-      Name = "${var.service_name}-${each.value.name}"
+      Name = each.value.name
       env  = "backup"
     })
   }
@@ -104,14 +104,14 @@ resource "aws_launch_template" "ec2" {
   ]
 
   tags = merge(var.service_tags, {
-    Name = "${var.service_name}-${each.value.name}"
+    Name = each.value.name
   })
 }
 
 resource "aws_autoscaling_group" "ec2" {
   for_each = { for k, v in local.ec2_instances : k => v if v.enable_autoscaling }
 
-  name = "${var.service_name}-${each.value.name}-asg"
+  name = "${each.value.name}-asg"
 
   desired_capacity = each.value.desired_capacity
   max_size         = each.value.max_size
@@ -159,7 +159,7 @@ resource "aws_autoscaling_group" "ec2" {
   tag {
     key                 = "Name"
     propagate_at_launch = false
-    value               = "${var.service_name}-${each.value.name}-asg"
+    value               = "${each.value.name}-asg"
   }
 
   tag {
@@ -178,7 +178,7 @@ resource "aws_autoscaling_group" "ec2" {
 resource "aws_autoscaling_policy" "cpu" {
   for_each = { for k, v in local.ec2_instances : k => v if v.enable_autoscaling }
 
-  name                   = "${var.service_name}-${each.value.name}-cpu-target-tracking"
+  name                   = "${each.value.name}-cpu-target-tracking"
   autoscaling_group_name = aws_autoscaling_group.ec2[each.key].name
   policy_type            = "TargetTrackingScaling"
 

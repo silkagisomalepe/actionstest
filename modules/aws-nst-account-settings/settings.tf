@@ -250,11 +250,6 @@ resource "aws_sns_topic" "technical_alerts_topic" {
   )
 }
 
-resource "aws_sns_topic_policy" "technical_alerts_policy" {
-  arn    = aws_sns_topic.technical_alerts_topic.arn
-  policy = data.aws_iam_policy_document.sns_policy.json
-}
-
 resource "aws_sns_topic_subscription" "technical_alerts_subscription" {
   count     = trimspace(var.sns_subscriber_email) != "" ? 1 : 0
   topic_arn = aws_sns_topic.technical_alerts_topic.arn

@@ -49,12 +49,6 @@ variable "create_database_subnet_group" {
   default = false
 }
 
-#pending dns-delegation
-# variable "public_aliases" {
-#   type    = list(string)
-#   default = []
-# }
-
 variable "private_dns" {
   type    = string
   default = "local"

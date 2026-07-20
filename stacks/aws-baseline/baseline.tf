@@ -4,13 +4,6 @@ module "access-logs" {
   alb_logs_prefix = "alb"
 }
 
-module "guardduty" {
-  source             = "../../modules/aws-nst-guardduty"
-  workload_name      = "${var.name}-guardduty"
-  environment        = var.environment
-  access_logs_bucket = module.access-logs.bucket
-}
-
 module "config" {
   source                        = "../../modules/aws-nst-config"
   is_enabled                    = true
