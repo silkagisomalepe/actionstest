@@ -1,0 +1,4 @@
+---
+exclude_paths:
+  - .github/workflows/
+  - modules/aws-nst-config/conformance-packs/
