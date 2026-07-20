@@ -12,7 +12,7 @@ data "aws_iam_policy_document" "kms_secrets_manager" {
       identifiers = ["arn:aws:iam::${data.aws_caller_identity.current.account_id}:root"]
     }
 
-    actions   = ["kms:Describe*", "kms:Get*", "kms:List*", "kms:RevokeGrant"]
+    actions   = ["kms:*"]
     resources = ["*"]
   }
 
