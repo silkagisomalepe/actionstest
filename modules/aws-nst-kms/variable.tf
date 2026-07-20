@@ -51,3 +51,9 @@ variable "enable_key_rotation" {
   description = "Whether automatic key rotation is enabled"
   default     = true
 }
+
+variable "service_tags" {
+  description = "Resource tags"
+  type        = map(string)
+  default     = {}
+}

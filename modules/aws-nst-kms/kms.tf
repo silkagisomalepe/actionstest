@@ -7,6 +7,7 @@ resource "aws_kms_key" "default" {
   enable_key_rotation      = var.enable_key_rotation
   customer_master_key_spec = var.customer_master_key_spec
   policy                   = var.policy
+  tags                     = var.service_tags
 }
 
 resource "aws_kms_alias" "default" {

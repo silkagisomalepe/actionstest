@@ -4,6 +4,7 @@ resource "aws_kms_key" "bucket" {
   enable_key_rotation     = true
   deletion_window_in_days = 30
   policy                  = data.aws_iam_policy_document.bucket_kms.json
+  tags                    = local.tags
 }
 
 resource "aws_kms_alias" "bucket" {

@@ -4,6 +4,7 @@ resource "aws_kms_key" "flowlog" {
   enable_key_rotation     = true
   deletion_window_in_days = 30
   policy                  = data.aws_iam_policy_document.flowlog_kms.json
+  tags                    = var.service_tags
 }
 
 resource "aws_kms_alias" "flowlog" {
@@ -25,6 +26,7 @@ resource "aws_cloudwatch_log_group" "flowlog_loggroup" {
 resource "aws_iam_role" "flowlog_role_cloudwatch" {
   name               = "${var.name}-cloudwatch-role"
   assume_role_policy = data.aws_iam_policy_document.flow_logs.json
+  tags               = var.service_tags
 }
 
 resource "aws_flow_log" "flowlog_cloudwatch" {

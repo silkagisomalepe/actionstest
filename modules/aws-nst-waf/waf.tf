@@ -5,6 +5,7 @@ module "kms_key" {
   enable_key_rotation     = true
   alias                   = "alias/${var.name}-waf-logs-key"
   policy                  = data.aws_iam_policy_document.kms_waf.json
+  service_tags            = var.service_tags
 }
 
 resource "aws_s3_bucket" "waf" {

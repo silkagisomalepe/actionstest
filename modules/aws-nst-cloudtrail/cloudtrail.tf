@@ -13,6 +13,7 @@ module "kms_key" {
   enable_key_rotation     = true
   alias                   = "alias/${var.name}-key"
   policy                  = data.aws_iam_policy_document.kms.json
+  service_tags            = local.tags
 }
 
 

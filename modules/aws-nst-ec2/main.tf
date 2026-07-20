@@ -156,22 +156,17 @@ resource "aws_autoscaling_group" "ec2" {
     aws_launch_template.ec2
   ]
 
-  tag {
-    key                 = "Name"
-    propagate_at_launch = false
-    value               = "${each.value.name}-asg"
-  }
+  dynamic "tag" {
+    for_each = merge(var.service_tags, {
+      Name      = "${each.value.name}-asg"
+      Terraform = "true"
+    })
 
-  tag {
-    key                 = "Environment"
-    propagate_at_launch = false
-    value               = var.service_tags["Environment"]
-  }
-
-  tag {
-    key                 = "Terraform"
-    propagate_at_launch = false
-    value               = true
+    content {
+      key                 = tag.key
+      value               = tag.value
+      propagate_at_launch = false
+    }
   }
 }
 
