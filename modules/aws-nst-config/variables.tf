@@ -45,3 +45,9 @@ variable "access_logs_bucket" {
   description = "Access logs bucket"
   default     = ""
 }
+
+variable "service_tags" {
+  description = "Resource tags"
+  type        = map(string)
+  default     = {}
+}

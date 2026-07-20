@@ -49,6 +49,8 @@ module "vpc" {
   dhcp_options_tags = {
     Name = "${var.name}-dhcp-option-set"
   }
+
+  tags = var.tags
 }
 
 module "vpc-flowlogs" {

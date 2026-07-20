@@ -1,7 +1,7 @@
 locals {
-  tags = {
+  tags = merge(var.service_tags, {
     Environment = var.environment
-  }
+  })
 }
 
 resource "aws_iam_role" "config_role" {

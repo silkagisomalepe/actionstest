@@ -3,6 +3,7 @@ module "access-logs" {
   source          = "../../modules/aws-nst-access-logs"
   name            = "${var.name}-access-logs"
   alb_logs_prefix = "alb"
+  service_tags    = var.tags
 }
 
 module "config" {
@@ -14,6 +15,7 @@ module "config" {
   config_delivery_frequency     = "Six_Hours"
   include_global_resource_types = true
   access_logs_bucket            = module.access-logs.bucket
+  service_tags                  = var.tags
 }
 
 module "cloudtrail" {
@@ -25,6 +27,7 @@ module "cloudtrail" {
   is_multi_region_trail         = true
   include_global_service_events = true
   access_logs_bucket            = module.access-logs.bucket
+  service_tags                  = var.tags
 }
 
 module "account_settings" {
@@ -41,4 +44,5 @@ module "account_settings" {
   budget_alerts_emails             = var.budget_alerts_emails
   budget_alerts_escalations_emails = var.budget_alerts_escalations_emails
   minimum_password_length          = "32"
+  service_tags                     = var.tags
 }

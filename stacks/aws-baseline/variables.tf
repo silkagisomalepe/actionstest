@@ -28,3 +28,9 @@ variable "budget_alerts_escalations_emails" {
   default     = []
 }
 
+variable "tags" {
+  description = "Resource tags"
+  type        = map(string)
+  default     = {}
+}
+

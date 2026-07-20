@@ -17,25 +17,28 @@ module "alb-public" {
       http = {
         port     = 80
         protocol = "HTTP"
-        redirect = {
-          port        = "443"
-          protocol    = "HTTPS"
-          status_code = "HTTP_301"
-        }
-      }
-    },
-    #needs ssl cert verification
-    {
-      https = {
-        port            = 443
-        protocol        = "HTTPS"
-        ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
-        certificate_arn = one(module.acm-alb[*].ssl_cert_arn)
         forward = {
           target_group_key = "rewards"
         }
+        # redirect = {
+        #   port        = "443"
+        #   protocol    = "HTTPS"
+        #   status_code = "HTTP_301"
+        # }
       }
-    }
+    },
+    #needs ssl cert verification
+    # {
+    #   https = {
+    #     port            = 443
+    #     protocol        = "HTTPS"
+    #     ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
+    #     certificate_arn = one(module.acm-alb[*].ssl_cert_arn)
+    #     forward = {
+    #       target_group_key = "rewards"
+    #     }
+    #   }
+    # }
   )
 
   target_groups = {

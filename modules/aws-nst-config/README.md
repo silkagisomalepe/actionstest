@@ -50,6 +50,7 @@
 | <a name="input_environment"></a> [environment](#input\_environment) | Environment environment | `string` | `""` | no |
 | <a name="input_include_global_resource_types"></a> [include\_global\_resource\_types](#input\_include\_global\_resource\_types) | Whether to include global resource types in the recording group | `bool` | `true` | no |
 | <a name="input_is_enabled"></a> [is\_enabled](#input\_is\_enabled) | Whether the AWS Config recorder is enabled | `bool` | `true` | no |
+| <a name="input_service_tags"></a> [service\_tags](#input\_service\_tags) | Resource tags | `map(string)` | `{}` | no |
 
 ## Outputs
 

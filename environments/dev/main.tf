@@ -11,6 +11,8 @@ module "aws-baseline" {
   monthly_budget_limit_amount      = var.monthly_budget_limit_amount
   budget_alerts_emails             = var.budget_alerts_emails
   budget_alerts_escalations_emails = var.budget_alerts_escalations_emails
+
+  tags = var.tags
 }
 
 module "aws-rewards" {
