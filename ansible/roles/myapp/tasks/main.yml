@@ -31,14 +31,14 @@
     owner: "{{ myapp_user }}"
     group: "{{ myapp_user }}"
     mode: preserve
-  notify: restart myapp
+  notify: Restart myapp
 
 - name: Install Python dependencies into a venv
   ansible.builtin.pip:
     requirements: "{{ myapp_app_dir }}/requirements.txt"
     virtualenv: "{{ myapp_venv_dir }}"
     virtualenv_command: python3 -m venv
-  notify: restart myapp
+  notify: Restart myapp
 
 - name: Template .env
   ansible.builtin.template:
@@ -47,7 +47,7 @@
     owner: "{{ myapp_user }}"
     group: "{{ myapp_user }}"
     mode: "0600"
-  notify: restart myapp
+  notify: Restart myapp
 
 - name: Template systemd unit
   ansible.builtin.template:
@@ -55,8 +55,8 @@
     dest: /etc/systemd/system/myapp.service
     mode: "0644"
   notify:
-    - reload systemd
-    - restart myapp
+    - Reload systemd
+    - Restart myapp
 
 - name: Enable and start myapp service
   ansible.builtin.systemd:
@@ -70,4 +70,4 @@
     src: myapp.conf.j2
     dest: /etc/nginx/conf.d/myapp.conf
     mode: "0644"
-  notify: reload nginx
+  notify: Reload nginx

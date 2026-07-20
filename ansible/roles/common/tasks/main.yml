@@ -8,7 +8,5 @@
 - name: Install tools
   ansible.builtin.package:
     name:
-      - htop
       - curl
-      - git
     state: present
