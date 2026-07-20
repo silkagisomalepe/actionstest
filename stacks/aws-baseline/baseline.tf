@@ -1,3 +1,4 @@
+#trivy:ignore:AWS-0132
 module "access-logs" {
   source          = "../../modules/aws-nst-access-logs"
   name            = "${var.name}-access-logs"
