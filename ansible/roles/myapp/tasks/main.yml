@@ -1,0 +1,73 @@
+---
+- name: Install Python build tools (apt)
+  ansible.builtin.package:
+    name:
+      - python3
+      - python3-venv
+      - python3-pip
+    state: present
+  when: ansible_facts['pkg_mgr'] == 'apt'
+
+- name: Install Python build tools (dnf)
+  ansible.builtin.package:
+    name:
+      - python3
+      - python3-pip
+    state: present
+  when: ansible_facts['pkg_mgr'] == 'dnf'
+
+- name: Ensure app directory exists
+  ansible.builtin.file:
+    path: "{{ myapp_app_dir }}"
+    state: directory
+    owner: "{{ myapp_user }}"
+    group: "{{ myapp_user }}"
+    mode: "0755"
+
+- name: Deploy application source
+  ansible.builtin.copy:
+    src: src/
+    dest: "{{ myapp_app_dir }}/"
+    owner: "{{ myapp_user }}"
+    group: "{{ myapp_user }}"
+    mode: preserve
+  notify: restart myapp
+
+- name: Install Python dependencies into a venv
+  ansible.builtin.pip:
+    requirements: "{{ myapp_app_dir }}/requirements.txt"
+    virtualenv: "{{ myapp_venv_dir }}"
+    virtualenv_command: python3 -m venv
+  notify: restart myapp
+
+- name: Template .env
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ myapp_app_dir }}/.env"
+    owner: "{{ myapp_user }}"
+    group: "{{ myapp_user }}"
+    mode: "0600"
+  notify: restart myapp
+
+- name: Template systemd unit
+  ansible.builtin.template:
+    src: myapp.service.j2
+    dest: /etc/systemd/system/myapp.service
+    mode: "0644"
+  notify:
+    - reload systemd
+    - restart myapp
+
+- name: Enable and start myapp service
+  ansible.builtin.systemd:
+    name: myapp
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: Template nginx site config
+  ansible.builtin.template:
+    src: myapp.conf.j2
+    dest: /etc/nginx/conf.d/myapp.conf
+    mode: "0644"
+  notify: reload nginx

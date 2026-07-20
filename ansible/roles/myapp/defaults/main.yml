@@ -1,0 +1,12 @@
+---
+myapp_user: ec2-user
+myapp_app_dir: /opt/myapp
+myapp_venv_dir: "{{ myapp_app_dir }}/venv"
+myapp_gunicorn_workers: 4
+myapp_bind_port: 8000
+
+myapp_secret_id: rewards/app-secret
+myapp_aws_region: eu-west-1
+myapp_debug: false
+
+myapp_server_name: "_"

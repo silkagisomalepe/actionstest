@@ -1,0 +1,20 @@
+[Unit]
+Description=myapp FastAPI app (gunicorn + uvicorn workers)
+After=network.target
+
+[Service]
+User={{ myapp_user }}
+Group={{ myapp_user }}
+WorkingDirectory={{ myapp_app_dir }}
+EnvironmentFile={{ myapp_app_dir }}/.env
+ExecStart={{ myapp_venv_dir }}/bin/gunicorn myapp.main:app \
+    -k uvicorn.workers.UvicornWorker \
+    --workers {{ myapp_gunicorn_workers }} \
+    --bind 127.0.0.1:{{ myapp_bind_port }} \
+    --access-logfile - \
+    --error-logfile -
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
