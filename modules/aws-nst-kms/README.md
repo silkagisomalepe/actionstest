@@ -32,6 +32,7 @@
 | <a name="input_is_enabled"></a> [is\_enabled](#input\_is\_enabled) | Whether the KMS key is enabled | `bool` | `true` | no |
 | <a name="input_key_usage"></a> [key\_usage](#input\_key\_usage) | Intended use of the KMS key (e.g. ENCRYPT\_DECRYPT) | `string` | `"ENCRYPT_DECRYPT"` | no |
 | <a name="input_policy"></a> [policy](#input\_policy) | Key policy JSON document | `string` | `""` | no |
+| <a name="input_service_tags"></a> [service\_tags](#input\_service\_tags) | Resource tags | `map(string)` | `{}` | no |
 
 ## Outputs
 
