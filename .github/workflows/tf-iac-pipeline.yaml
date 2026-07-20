@@ -1,0 +1,214 @@
+name: Terraform
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - environments/**
+      - stacks/**
+      - modules/**
+  pull_request:
+    branches: [main]
+    paths:
+      - environments/**
+      - stacks/**
+      - modules/**
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: Environment
+        required: true
+        type: choice
+        options: [dev, prod]
+      action:
+        description: Action
+        required: true
+        type: choice
+        options: [plan, apply]
+        default: plan
+
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
+env:
+  TF_VERSION: "~> 1.10"
+  TF_IN_AUTOMATION: "true"
+
+jobs:
+  docs:
+    name: Terraform docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - name: terraform-docs (fail if module READMEs are stale)
+        uses: terraform-docs/gh-actions@v1.4.1
+        with:
+          working-dir: .
+          config-file: .terraform-docs.yml
+          fail-on-diff: true
+          git-push: false
+
+  detect:
+    name: Detect changed environments
+    runs-on: ubuntu-latest
+    outputs:
+      environments: ${{ steps.changed.outputs.environments }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Resolve affected environments
+        id: changed
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo 'environments=["${{ inputs.environment }}"]' >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE="${{ github.event.before }}"
+          fi
+
+          if [ "$BASE" = "0000000000000000000000000000000000000000" ] || [ -z "$BASE" ]; then
+            ENVS=$(ls -d environments/*/ | xargs -n1 basename | jq -Rc '.' | jq -sc '.')
+            echo "environments=$ENVS" >> $GITHUB_OUTPUT
+            exit 0
+          fi
+
+          CHANGED=$(git diff --name-only "$BASE" "${{ github.sha }}")
+
+          if echo "$CHANGED" | grep -qE '^(stacks|modules)/'; then
+            ENVS=$(ls -d environments/*/ | xargs -n1 basename | jq -Rc '.' | jq -sc '.')
+          else
+            ENVS=$(echo "$CHANGED" | grep -E '^environments/[^/]+/' | cut -d/ -f2 | sort -u | jq -Rc '.' | jq -sc '.')
+          fi
+
+          echo "environments=${ENVS:-[]}" >> $GITHUB_OUTPUT
+
+  plan:
+    name: Plan / ${{ matrix.environment }}
+    needs: detect
+    if: needs.detect.outputs.environments != '[]' && needs.detect.outputs.environments != ''
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.detect.outputs.environments) }}
+      fail-fast: false
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: Verify branch is up to date with main
+        if: github.event_name == 'pull_request'
+        run: |
+          git fetch origin main
+          if ! git merge-base --is-ancestor origin/main ${{ github.event.pull_request.head.sha }}; then
+            echo "Branch is not up to date with main — rebase before merging."
+            exit 1
+          fi
+
+      - name: Vulnerability Scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: config
+          scan-ref: .
+          format: table
+          output: trivy-results.txt
+          severity: CRITICAL,HIGH,MEDIUM
+          exit-code: "1"
+
+      - name: Upload Trivy results
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-results
+          path: |
+            trivy-results.txt
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_OIDC_IAM_ROLE }}
+          aws-region: ${{ secrets.DEV_AWS_OIDC_REGION }}
+
+      - name: Init
+        run: terraform init -input=false -lock-timeout=60s
+        working-directory: environments/${{ matrix.environment }}
+
+      - name: Validate
+        run: terraform validate
+        working-directory: environments/${{ matrix.environment }}
+
+      - name: Format check
+        run: terraform fmt -check -diff -recursive
+        working-directory: environments/${{ matrix.environment }}
+
+      - uses: terraform-linters/setup-tflint@v4
+      - name: tflint (advisory)
+        continue-on-error: true
+        run: |
+          tflint --init
+          tflint --recursive
+
+      - name: Plan
+        run: terraform plan -no-color -input=false -var-file=../common.tfvars -out=tfplan 2>&1 | tee plan.txt
+        working-directory: environments/${{ matrix.environment }}
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: tfplan-${{ matrix.environment }}-${{ github.run_id }}
+          path: environments/${{ matrix.environment }}/tfplan
+          retention-days: 3
+
+  apply:
+    name: Apply / ${{ matrix.environment }}
+    needs: [detect, plan]
+    if: |
+      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
+      (github.event_name == 'workflow_dispatch' && inputs.action == 'apply')
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        environment: ${{ fromJson(needs.detect.outputs.environments) }}
+      fail-fast: false
+      max-parallel: 1
+    environment: ${{ matrix.environment }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: ${{ env.TF_VERSION }}
+
+      - name: Authenticate to AWS
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.DEV_AWS_OIDC_IAM_ROLE }}
+          aws-region: ${{ secrets.DEV_AWS_OIDC_REGION }}
+
+      - name: Download plan artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: tfplan-${{ matrix.environment }}-${{ github.run_id }}
+          path: environments/${{ matrix.environment }}
+
+      - name: Init
+        run: terraform init -input=false -lock-timeout=60s
+        working-directory: environments/${{ matrix.environment }}
+
+      - name: Apply
+        run: terraform apply -auto-approve -input=false -var-file=../common.tfvars tfplan
+        working-directory: environments/${{ matrix.environment }}
