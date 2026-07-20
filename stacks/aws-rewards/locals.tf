@@ -22,7 +22,7 @@ locals {
       vpc_zone_subnet_ids    = [module.vpc.private_subnets[0]]
       volume_size            = 50
       security_group_ids     = [module.ec2-private-sg.security_group_id]
-      target_group_arns      = []
+      target_group_arns      = [module.alb-public.target_groups["rewards"].arn]
       alerts_topic_arn       = ""
       enable_autoscaling     = true
       enable_ssm             = true

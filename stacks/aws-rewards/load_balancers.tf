@@ -31,29 +31,30 @@ module "alb-public" {
         protocol        = "HTTPS"
         ssl_policy      = "ELBSecurityPolicy-TLS13-1-2-2021-06"
         certificate_arn = one(module.acm-alb[*].ssl_cert_arn)
-        action-type     = "fixed-response"
-        fixed_response = {
-          content_type = "text/plain"
-          message_body = "default response"
-          status_code  = "200"
+        forward = {
+          target_group_key = "rewards"
         }
-        rules = [
-          for index, service in [for s in local.ec2_base : s if s.attach_to_public_facing_lb == true] : {
-            priority = index + 2
-            actions = [{
-              type             = "forward"
-              target_group_arn = module.ecs-service.lb_target_group_arn[service.name]
-            }]
-            conditions = [{
-              host_header = {
-                values = ["${replace(service.name, "${var.name}-", "")}.${var.public_dns}"]
-              }
-            }]
-          }
-        ]
       }
     }
   )
+
+  target_groups = {
+    rewards = {
+      name_prefix       = "rw-"
+      protocol          = "HTTP"
+      port              = 80
+      target_type       = "instance"
+      create_attachment = false
+
+      health_check = {
+        enabled  = true
+        path     = "/"
+        port     = "traffic-port"
+        protocol = "HTTP"
+        matcher  = "200-399"
+      }
+    }
+  }
 
   access_logs = {
     bucket  = var.access_logs_bucket

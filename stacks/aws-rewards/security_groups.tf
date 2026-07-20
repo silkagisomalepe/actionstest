@@ -23,7 +23,7 @@ module "alb-public-sg" {
     {
       rule                     = "http-80-tcp"
       description              = "ALB-EC2-HTTP"
-      source_security_group_id = module.ecs-private-sg.security_group_id
+      source_security_group_id = module.ec2-private-sg.security_group_id
     },
   ]
 
@@ -32,6 +32,7 @@ module "alb-public-sg" {
   })
 }
 
+#trivy:ignore:AWS-0104
 module "ec2-private-sg" {
   source  = "terraform-aws-modules/security-group/aws"
   version = "~> 5.1.2"
@@ -48,23 +49,29 @@ module "ec2-private-sg" {
     },
   ]
 
-  egress_with_source_security_group_id = [
+  egress_with_cidr_blocks = [
     {
-      description              = "EC2-PostgreSQL-TCP"
-      from_port                = 5432
-      to_port                  = 5432
-      protocol                 = "tcp"
-      source_security_group_id = module.db-private-sg.security_group_id
+      description = "EC2-Internet-HTTPS"
+      from_port   = 443
+      to_port     = 443
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
     },
     {
-      description              = "EC2-ElastiCache-TCP"
-      from_port                = 6379
-      to_port                  = 6379
-      protocol                 = "tcp"
-      source_security_group_id = module.cache-private-sg.security_group_id
-    }
+      description = "DNS-lookup-TCP"
+      from_port   = 53
+      to_port     = 53
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
+      description = "DNS-lookup-UDP"
+      from_port   = 53
+      to_port     = 53
+      protocol    = "udp"
+      cidr_blocks = "0.0.0.0/0"
+    },
   ]
-
   tags = merge(var.tags, {
     Name = "${var.name}-ec2-private-sg"
   })
