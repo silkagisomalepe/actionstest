@@ -1,6 +1,10 @@
 module "aws-baseline" {
   source = "../../stacks/aws-baseline"
 
+  providers = {
+    awscc.awscccurrent = awscc.awscccurrent
+  }
+
   name        = var.workload_name
   environment = var.environment
 

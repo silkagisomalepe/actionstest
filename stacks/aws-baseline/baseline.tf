@@ -36,6 +36,10 @@ module "cloudtrail" {
 module "account_settings" {
   source = "../../modules/aws-nst-account-settings"
 
+  providers = {
+    awscc.awscccurrent = awscc.awscccurrent
+  }
+
   name                             = var.name
   budget_name                      = "${var.name}-budget"
   limit_amount                     = var.monthly_budget_limit_amount

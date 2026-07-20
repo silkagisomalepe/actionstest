@@ -7,8 +7,9 @@ terraform {
       version = ">= 5.0"
     }
     awscc = {
-      source  = "hashicorp/awscc"
-      version = ">= 1.0"
+      source                = "hashicorp/awscc"
+      version               = ">= 1.0"
+      configuration_aliases = [awscc.awscccurrent]
     }
     awsutils = {
       source  = "cloudposse/awsutils"
