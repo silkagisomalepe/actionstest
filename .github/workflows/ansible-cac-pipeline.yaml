@@ -114,22 +114,30 @@ jobs:
           aws-region: ${{ env.AWS_OIDC_REGION }}
 
       - name: Package playbook
-        run: tar -czf ansible-deploy.tar.gz playbooks/ roles/ requirements.yml
+        run: zip -r ansible-deploy.zip playbooks/ roles/ requirements.yml ansible.cfg
 
       - name: Upload artifact
-        run: aws s3 cp ansible-deploy.tar.gz s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.tar.gz
+        run: aws s3 cp ansible-deploy.zip s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.zip
 
       - name: Run playbook (SSM)
         run: |
-          MODE="${{ github.event_name == 'workflow_dispatch' && inputs.action == 'check' && '--check' || '' }}"
+          CHECK="${{ github.event_name == 'workflow_dispatch' && inputs.action == 'check' && 'True' || 'False' }}"
+          PARAMS=$(jq -n \
+            --arg path "https://s3.${{ env.AWS_OIDC_REGION }}.amazonaws.com/${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.zip" \
+            --arg check "$CHECK" \
+            --arg env "${{ matrix.environment }}" \
+            '{
+              SourceType: ["S3"],
+              SourceInfo: [({path: $path} | tojson)],
+              InstallDependencies: ["True"],
+              PlaybookFile: ["playbooks/site.yml"],
+              ExtraVariables: [("env=" + $env)],
+              Check: [$check]
+            }')
           COMMAND_ID=$(aws ssm send-command \
-            --document-name "AWS-RunAnsiblePlaybook" \
-            --targets "Key=tag:Environment,Values=${{ matrix.environment }}" "Key=tag:Role,Values=WebServer" \
-            --parameters '{
-              "playbookurl": ["s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-'"${{ github.sha }}"'.tar.gz"],
-              "playbookfile": ["playbooks/site.yml"],
-              "extraparams": ["--extra-vars env=${{ matrix.environment }} '"$MODE"'"]
-            }' \
+            --document-name "AWS-ApplyAnsiblePlaybooks" \
+            --targets "Key=tag:Environment,Values=${{ matrix.environment }}" "Key=tag:Service,Values=rewards" \
+            --parameters "$PARAMS" \
             --query "Command.CommandId" --output text)
           echo "COMMAND_ID=$COMMAND_ID" >> $GITHUB_ENV
 

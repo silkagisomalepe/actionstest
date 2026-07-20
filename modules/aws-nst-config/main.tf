@@ -1,12 +1,10 @@
-locals {
-  tags = merge(var.service_tags, {
-    Environment = var.environment
-  })
-}
-
 resource "aws_iam_role" "config_role" {
   name               = "${var.config_name}-role"
   assume_role_policy = data.aws_iam_policy_document.aws_config_role_policy.json
+
+  tags = merge(var.service_tags, {
+    Name = "${var.config_name}-role"
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "managed_policy" {
@@ -17,6 +15,10 @@ resource "aws_iam_role_policy_attachment" "managed_policy" {
 resource "aws_iam_policy" "aws_config_policy" {
   name   = "${var.config_name}-policy"
   policy = data.aws_iam_policy_document.aws_config_policy.json
+
+  tags = merge(var.service_tags, {
+    Name = "${var.config_name}-policy"
+  })
 }
 
 resource "aws_iam_role_policy_attachment" "aws_config_policy" {
@@ -71,6 +73,10 @@ resource "aws_kms_key" "config" {
   enable_key_rotation     = true
   deletion_window_in_days = 30
   policy                  = data.aws_iam_policy_document.config_kms.json
+
+  tags = merge(var.service_tags, {
+    Name = "${var.config_name}-key"
+  })
 }
 
 resource "aws_kms_alias" "config" {
@@ -81,7 +87,7 @@ resource "aws_kms_alias" "config" {
 resource "aws_s3_bucket" "aws_config" {
   bucket = "${var.config_name}-logs"
 
-  tags = merge(local.tags, {
+  tags = merge(var.service_tags, {
     Name = "${var.config_name}-logs"
   })
 }
