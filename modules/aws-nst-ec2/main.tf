@@ -35,7 +35,7 @@ resource "aws_iam_role_policy_attachment" "logs" {
 }
 
 resource "aws_iam_role_policy_attachment" "additional" {
-  for_each   = toset(var.additional_policy_arns)
+  for_each   = { for idx, arn in var.additional_policy_arns : tostring(idx) => arn }
   role       = aws_iam_role.server_role.name
   policy_arn = each.value
 }
