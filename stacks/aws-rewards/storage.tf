@@ -1,11 +1,11 @@
 locals {
   bucket_names = [
-    "${workload_name}-ansible-artifacts",
+    "${var.name}-ansible-artifacts",
   ]
 }
 
 module "s3-buckets" {
-  source = "../../modules/aws-so-s3"
+  source = "../../modules/aws-nst-s3"
 
   for_each = toset(local.bucket_names)
   name     = each.value
