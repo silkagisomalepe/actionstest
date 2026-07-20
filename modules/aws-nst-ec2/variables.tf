@@ -30,3 +30,9 @@ variable "service_tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "additional_policy_arns" {
+  description = "Extra IAM policy ARNs to attach to the instance role (e.g. artifact bucket read access)"
+  type        = list(string)
+  default     = []
+}

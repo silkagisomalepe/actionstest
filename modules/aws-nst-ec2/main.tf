@@ -34,6 +34,12 @@ resource "aws_iam_role_policy_attachment" "logs" {
   policy_arn = aws_iam_policy.ec2_policy.arn
 }
 
+resource "aws_iam_role_policy_attachment" "additional" {
+  for_each   = toset(var.additional_policy_arns)
+  role       = aws_iam_role.server_role.name
+  policy_arn = each.value
+}
+
 resource "aws_launch_template" "ec2" {
   for_each = local.ec2_instances
 
