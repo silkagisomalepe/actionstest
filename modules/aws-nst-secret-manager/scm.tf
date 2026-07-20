@@ -18,8 +18,14 @@ resource "aws_secretsmanager_secret" "secret" {
 }
 
 resource "aws_secretsmanager_secret_version" "secret" {
+  count = var.secret_string != null ? 1 : 0
+
   secret_id     = aws_secretsmanager_secret.secret.id
   secret_string = var.secret_string
+
+  lifecycle {
+    ignore_changes = [secret_string]
+  }
 }
 
 resource "aws_secretsmanager_secret_rotation" "secret" {

@@ -117,7 +117,9 @@ jobs:
         run: zip -r ansible-deploy.zip playbooks/ roles/ requirements.yml ansible.cfg
 
       - name: Upload artifact
-        run: aws s3 cp ansible-deploy.zip s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.zip
+        run: |
+          aws s3 cp ansible-deploy.zip s3://${{ env.AWS_OIDC_ARTIFACT_BUCKET }}/${{ matrix.environment }}/ansible-deploy-${{ github.sha }}.zip
+          aws s3 cp ansible-deploy.zip s3://rewards-ansible-artifacts/dev/ansible-deploy.zip
 
       - name: Run playbook (SSM)
         run: |

@@ -24,20 +24,19 @@ resource "aws_iam_policy" "ec2_policy" {
   })
 }
 
-resource "aws_iam_role_policy_attachment" "ssm" {
-  role       = aws_iam_role.server_role.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore"
-}
+resource "aws_iam_role_policy_attachment" "managed" {
+  for_each = toset(concat([
+    "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
+    "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
+    aws_iam_policy.ec2_policy.arn
+  ], var.additional_policy_arns))
 
-resource "aws_iam_role_policy_attachment" "logs" {
-  role       = aws_iam_role.server_role.name
-  policy_arn = aws_iam_policy.ec2_policy.arn
-}
-
-resource "aws_iam_role_policy_attachment" "additional" {
-  for_each   = { for idx, arn in var.additional_policy_arns : tostring(idx) => arn }
   role       = aws_iam_role.server_role.name
   policy_arn = each.value
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_launch_template" "ec2" {
@@ -81,7 +80,10 @@ resource "aws_launch_template" "ec2" {
   }
 
   user_data = each.value.user_data != "" ? each.value.user_data : (
-    each.value.enable_ssm ? filebase64("${path.module}/user_data.txt") : null
+    each.value.enable_ssm ? base64encode(templatefile("${path.module}/user_data.tftpl", {
+      ansible_artifact_bucket = var.ansible_artifact_bucket
+      ansible_artifact_key    = var.ansible_artifact_key
+    })) : null
   )
 
   tag_specifications {

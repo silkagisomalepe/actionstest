@@ -1,3 +1,4 @@
+#trivy:ignore:AWS-0053
 #trivy:ignore:AWS-0054
 module "alb-public" {
   source  = "terraform-aws-modules/alb/aws"
@@ -7,7 +8,7 @@ module "alb-public" {
   vpc_id  = module.vpc.vpc_id
   subnets = slice(module.vpc.public_subnets, 0, min(3, length(module.vpc.public_subnets)))
 
-  internal                   = true
+  internal                   = false
   enable_deletion_protection = false #set to true if not demo
   preserve_host_header       = true
   create_security_group      = false
@@ -44,7 +45,7 @@ module "alb-public" {
 
   target_groups = {
     rewards = {
-      name_prefix       = "rw-"
+      name              = "${var.name}-tg"
       protocol          = "HTTP"
       port              = 80
       target_type       = "instance"

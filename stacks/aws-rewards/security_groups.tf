@@ -58,6 +58,13 @@ module "ec2-private-sg" {
       cidr_blocks = "0.0.0.0/0"
     },
     {
+      description = "EC2-Internet-HTTP"
+      from_port   = 80
+      to_port     = 80
+      protocol    = "tcp"
+      cidr_blocks = "0.0.0.0/0"
+    },
+    {
       description = "DNS-lookup-TCP"
       from_port   = 53
       to_port     = 53

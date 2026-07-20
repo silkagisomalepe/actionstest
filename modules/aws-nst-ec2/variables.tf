@@ -36,3 +36,15 @@ variable "additional_policy_arns" {
   type        = list(string)
   default     = []
 }
+
+variable "ansible_artifact_bucket" {
+  description = "S3 bucket to pull the latest Ansible deployment bundle from at boot. Empty disables the pull-based bootstrap."
+  type        = string
+  default     = ""
+}
+
+variable "ansible_artifact_key" {
+  description = "S3 key of the Ansible deployment bundle to pull at boot"
+  type        = string
+  default     = "dev/ansible-deploy.zip"
+}

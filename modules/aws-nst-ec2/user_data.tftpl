@@ -12,3 +12,15 @@ systemctl is-active --quiet snap.amazon-ssm-agent.amazon-ssm-agent.service || \
   sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
 
 sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service --no-pager
+
+%{ if ansible_artifact_bucket != "" ~}
+sudo apt-get update -y
+sudo apt-get install -y ansible-core awscli unzip
+
+sudo mkdir -p /opt/ansible
+cd /opt/ansible
+sudo aws s3 cp "s3://${ansible_artifact_bucket}/${ansible_artifact_key}" ansible-deploy.zip
+sudo unzip -o ansible-deploy.zip
+
+sudo ansible-playbook playbooks/site.yml -i localhost, -c local
+%{ endif ~}
