@@ -1,0 +1,14 @@
+#!/bin/bash
+set -euo pipefail
+
+sudo mkdir -p /tmp/ssm
+cd /tmp/ssm
+
+if [ "$(snap info amazon-ssm-agent | awk '/tracking:/ {print $2}')" != "latest/candidate" ]; then
+  sudo snap switch --channel=candidate amazon-ssm-agent
+fi
+
+systemctl is-active --quiet snap.amazon-ssm-agent.amazon-ssm-agent.service || \
+  sudo systemctl start snap.amazon-ssm-agent.amazon-ssm-agent.service
+
+sudo systemctl status snap.amazon-ssm-agent.amazon-ssm-agent.service --no-pager
