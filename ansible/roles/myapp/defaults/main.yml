@@ -1,5 +1,5 @@
 ---
-myapp_user: ec2-user
+myapp_user: myapp
 myapp_app_dir: /opt/myapp
 myapp_venv_dir: "{{ myapp_app_dir }}/venv"
 myapp_gunicorn_workers: 4
