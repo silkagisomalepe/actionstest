@@ -1,14 +1,15 @@
-# Terraform IAC — Neal Street Tech Demo
+# Terraform IAC / Ansible — Neal Street Tech Demo
 
 ## Structure
 
 ```
 environments/
   common.tfvars          # shared values across all environments
-  dev/                   # mvp environment (calls stacks/nst-aws)
+  dev/                    # mvp environment (calls stacks/aws-baseline, stacks/aws-rewards)
 
 stacks/
-  nst-aws/        # reusable stack: wiring of all modules
+  aws-baseline/           # reusable stack: account-level baseline modules
+  aws-rewards/            # reusable stack: app-specific wiring of modules
 
 modules/
   aws-nst-*/              # internal reusable modules
