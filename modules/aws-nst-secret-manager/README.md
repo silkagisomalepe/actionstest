@@ -35,5 +35,6 @@
 
 | Name | Description |
 |------|-------------|
+| <a name="output_kms_key_arn"></a> [kms\_key\_arn](#output\_kms\_key\_arn) | n/a |
 | <a name="output_secret_arn"></a> [secret\_arn](#output\_secret\_arn) | n/a |
 <!-- END_TF_DOCS -->
