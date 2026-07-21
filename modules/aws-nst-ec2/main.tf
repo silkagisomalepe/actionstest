@@ -25,11 +25,11 @@ resource "aws_iam_policy" "ec2_policy" {
 }
 
 resource "aws_iam_role_policy_attachment" "managed" {
-  for_each = toset(concat([
+  for_each = { for idx, arn in concat([
     "arn:aws:iam::aws:policy/AmazonSSMManagedInstanceCore",
     "arn:aws:iam::aws:policy/CloudWatchAgentServerPolicy",
     aws_iam_policy.ec2_policy.arn
-  ], var.additional_policy_arns))
+  ], var.additional_policy_arns) : tostring(idx) => arn }
 
   role       = aws_iam_role.server_role.name
   policy_arn = each.value
