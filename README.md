@@ -1,4 +1,4 @@
-# Terraform IAC / Ansible — Neal Street Tech Demo
+# Terraform IAC / Ansible
 
 ## Structure
 
