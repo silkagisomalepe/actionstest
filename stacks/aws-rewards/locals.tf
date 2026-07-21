@@ -16,7 +16,7 @@ locals {
   ec2_base = [
     {
       name                   = "rewards"
-      type                   = "t4g.micro"
+      type                   = "t4g.small"
       ami                    = data.aws_ami.ubuntu_arm64.id
       subnet_id              = module.vpc.private_subnets[0]
       vpc_zone_subnet_ids    = [module.vpc.private_subnets[0]]
