@@ -4,6 +4,11 @@
     name: nginx
     state: present
 
+- name: Remove default nginx site
+  ansible.builtin.file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+
 - name: Start nginx
   ansible.builtin.service:
     name: nginx

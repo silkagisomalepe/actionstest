@@ -85,13 +85,11 @@ jobs:
   deploy:
     name: Deploy / ${{ matrix.environment }}
     needs: [lint, scan]
-    if: |
-      (github.ref == 'refs/heads/main' && github.event_name == 'push') ||
-      (github.event_name == 'workflow_dispatch' && inputs.action == 'deploy')
+    if: github.event_name == 'workflow_dispatch' && inputs.action == 'deploy'
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        environment: ${{ github.event_name == 'workflow_dispatch' && fromJson(format('["{0}"]', inputs.environment)) || fromJson('["dev","prod"]') }}
+        environment: ${{ fromJson(format('["{0}"]', inputs.environment)) }}
       fail-fast: false
       max-parallel: 1
     environment: ${{ matrix.environment }}

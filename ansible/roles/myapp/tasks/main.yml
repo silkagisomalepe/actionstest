@@ -83,6 +83,13 @@
 - name: Template nginx site config
   ansible.builtin.template:
     src: myapp.conf.j2
-    dest: /etc/nginx/conf.d/myapp.conf
+    dest: /etc/nginx/sites-available/myapp.conf
     mode: "0644"
+  notify: Reload nginx
+
+- name: Enable nginx site
+  ansible.builtin.file:
+    src: /etc/nginx/sites-available/myapp.conf
+    dest: /etc/nginx/sites-enabled/myapp.conf
+    state: link
   notify: Reload nginx

@@ -84,3 +84,29 @@ aws ssm send-command \
 ```
 
 Prompts interactively for the `DEV_`/`PROD_` `AWS_OIDC_*` secrets that `ansible-cac-pipeline.yaml` and `tf-iac-pipeline.yaml` expect, creating the `dev`/`prod` GitHub environments if they don't already exist.
+
+## Troubleshooting
+
+Connect to an instance via SSM Session Manager (no SSH/bastion needed):
+
+```bash
+aws ssm start-session --target <instance-id>
+```
+
+### `myapp` not responding
+
+```bash
+sudo systemctl status myapp --no-pager
+sudo journalctl -u myapp -n 50 --no-pager
+```
+
+`myapp` fetches `APP_SECRET` from Secrets Manager at import time (`ansible/roles/myapp/files/src/myapp/config.py`) and exits on failure — if the app never responds, this is almost always the cause. Check for a `Boot Error: ...` line in the journal output: it means either the secret has no value yet (set one in the console) or the instance role lacks `secretsmanager:GetSecretValue`/`kms:Decrypt` on it.
+
+### nginx not reloading
+
+```bash
+sudo systemctl status nginx --no-pager
+sudo nginx -t
+```
+
+`nginx -t` will point at the exact config line if `sites-available/myapp.conf` (or anything else in `sites-enabled/`) has a syntax error or a `default_server` conflict.

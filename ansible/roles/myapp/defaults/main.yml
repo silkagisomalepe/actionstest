@@ -5,7 +5,7 @@ myapp_venv_dir: "{{ myapp_app_dir }}/venv"
 myapp_gunicorn_workers: 4
 myapp_bind_port: 8000
 
-myapp_secret_id: rewards/app-secret
+myapp_secret_id: APP_SECRET
 myapp_aws_region: eu-west-1
 myapp_debug: false
 
