@@ -22,7 +22,11 @@ modules/
 
 ## Terraform CI
 
-Pull request → Vulnerability scan → TF Linting → TF fmt → plan + PR comment. Merge to main → manual approval → apply.
+Pull request → Vulnerability scan → TF Linting → TF fmt → validate → plan (uploaded as an artifact). Merge to main, or `workflow_dispatch` with `action: apply` → plan → manual approval → apply.
+
+## Ansible CI
+
+Pull request / push to main (`ansible/**` changes) → yamllint + ansible-lint + syntax-check → Vulnerability scan. Deploy only runs via `workflow_dispatch` with `action: deploy`, targeting the single environment chosen in the input → manual approval → package + upload to S3 → SSM deploy → smoke test. Pushes and PRs never trigger a deploy.
 
 ## Running locally
 

@@ -16,11 +16,11 @@ locals {
   ec2_base = [
     {
       name                   = "rewards"
-      type                   = "t4g.small"
+      type                   = "t4g.micro"
       ami                    = data.aws_ami.ubuntu_arm64.id
       subnet_id              = module.vpc.private_subnets[0]
       vpc_zone_subnet_ids    = [module.vpc.private_subnets[0]]
-      volume_size            = 50
+      volume_size            = 10
       security_group_ids     = [module.ec2-private-sg.security_group_id]
       target_group_arns      = [module.alb-public.target_groups["rewards"].arn]
       alerts_topic_arn       = ""
