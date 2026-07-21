@@ -80,6 +80,12 @@
     state: started
     daemon_reload: true
 
+- name: Remove stale nginx site config from old conf.d path
+  ansible.builtin.file:
+    path: /etc/nginx/conf.d/myapp.conf
+    state: absent
+  notify: Reload nginx
+
 - name: Template nginx site config
   ansible.builtin.template:
     src: myapp.conf.j2
